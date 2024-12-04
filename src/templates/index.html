@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pixel Art Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-form {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .color-item {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .color-preview {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            margin-right: 10px;
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pixel Art Analyzer</h1>
+    <div class="upload-form">
+        <form id="uploadForm">
+            <div>
+                <label for="imageFile">Select Image:</label>
+                <input type="file" id="imageFile" accept="image/*" required>
+            </div>
+            <button type="submit" style="margin-top: 10px;">Analyze Image</button>
+        </form>
+    </div>
+    <div id="results" class="results"></div>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('imageFile').files[0]);
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                console.log('Server response:', data);
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                if (!data.analysis) {
+                    throw new Error('Invalid response format from server');
+                }
+                
+                // Display results
+                let resultsHtml = `
+                    <h2>Analysis Results</h2>
+                    <h3>Basic Image Analysis</h3>
+                    <p>Original dimensions: ${data.analysis.original_dimensions}</p>
+                    <p>Grid dimensions: ${data.analysis.grid_dimensions}</p>
+                    <p>Total blocks: ${data.analysis.total_blocks}</p>
+                    <p>Unique colors: ${data.analysis.unique_colors}</p>
+
+                    <h3>Color Usage</h3>
+                    <div class="color-grid">
+                `;
+
+                // Add color usage information
+                for (const [colorStr, count] of Object.entries(data.analysis.color_usage)) {
+                    const color = colorStr.replace(/[()]/g, '').split(',').map(Number);
+                    resultsHtml += `
+                        <div class="color-item">
+                            <span class="color-preview" style="background-color: rgb(${color[0]},${color[1]},${color[2]})"></span>
+                            RGB(${color[0]},${color[1]},${color[2]}): ${count} blocks
+                        </div>
+                    `;
+                }
+
+                resultsHtml += `
+                    </div>
+                    <h3>Downloads</h3>
+                    <p><a href="/download/reconstructed" target="_blank">Download Reconstructed Image</a></p>
+                    <p><a href="/download/analysis" target="_blank">Download Detailed Analysis (JSON)</a></p>
+                    <p><a href="/download/pixel_data" target="_blank">Download Raw Pixel Data (JSON)</a></p>
+                `;
+
+                document.getElementById('results').innerHTML = resultsHtml;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('results').innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
+            }
+        };
+    </script>
+</body>
+</html> 
