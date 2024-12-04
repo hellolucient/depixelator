@@ -1,6 +1,18 @@
+# System files
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
 venv/
+
+# Generated files
 *.json
 *.jpg
 *.jpeg
 *.png
-__pycache__/
+uploads/
+downloads/
+
+# Old files
+main.py
