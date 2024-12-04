@@ -10,4 +10,4 @@ A tool for analyzing and reconstructing pixel art images. Upload an image to get
 
 ## Setup and Running
 
-1. Clone the repository: 
+1. Clone the repository:
