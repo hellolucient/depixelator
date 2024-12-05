@@ -7,16 +7,24 @@ from PIL import Image
 
 st.title('Pixel Art Analyzer')
 
-# File uploader
-uploaded_file = st.file_uploader("Choose an image file", type=['jpg', 'jpeg', 'png'])
+# Multiple file uploader
+uploaded_files = st.file_uploader("Choose image files", type=['jpg', 'jpeg', 'png'], accept_multiple_files=True)
 
-if uploaded_file is not None:
-    # Create a temporary file to process
-    with open('temp_image.jpg', 'wb') as f:
-        f.write(uploaded_file.getvalue())
+if uploaded_files:
+    # Create a selectbox for choosing which image to analyze
+    selected_file = st.selectbox(
+        "Select image to analyze",
+        uploaded_files,
+        format_func=lambda x: x.name
+    )
     
-    # Process the image
+    # Process the selected file
     try:
+        # Create a temporary file to process
+        with open('temp_image.jpg', 'wb') as f:
+            f.write(selected_file.getvalue())
+        
+        # Process the image
         result = analyze_pixel_art('temp_image.jpg')
         
         # Display original and reconstructed images
@@ -24,7 +32,7 @@ if uploaded_file is not None:
         
         with col1:
             st.subheader("Original Image")
-            st.image(uploaded_file)
+            st.image(selected_file)
             
         with col2:
             st.subheader("Reconstructed Image")
@@ -52,13 +60,15 @@ if uploaded_file is not None:
         st.subheader("Download Results")
         
         # Save reconstructed image
-        reconstructed.save('reconstructed.jpg')
-        with open('reconstructed.jpg', 'rb') as f:
+        reconstructed_filename = f"reconstructed_{selected_file.name}"
+        reconstructed.save(reconstructed_filename)
+        with open(reconstructed_filename, 'rb') as f:
             st.download_button(
                 "Download Reconstructed Image",
                 f,
-                file_name="reconstructed.jpg",
-                mime="image/jpeg"
+                file_name=reconstructed_filename,
+                mime="image/jpeg",
+                key=f"download_image_{selected_file.name}"
             )
         
         # Save and offer JSON downloads
@@ -70,22 +80,25 @@ if uploaded_file is not None:
         st.download_button(
             "Download Pixel Data (JSON)",
             json.dumps(pixel_data, indent=2),
-            file_name="pixel_data.json",
-            mime="application/json"
+            file_name=f"pixel_data_{selected_file.name}.json",
+            mime="application/json",
+            key=f"download_pixel_{selected_file.name}"
         )
         
         st.download_button(
             "Download Analysis (JSON)",
             json.dumps(result, indent=2, default=str),
-            file_name="analysis.json",
-            mime="application/json"
+            file_name=f"analysis_{selected_file.name}.json",
+            mime="application/json",
+            key=f"download_analysis_{selected_file.name}"
         )
         
     except Exception as e:
-        st.error(f"Error processing image: {str(e)}")
+        st.error(f"Error processing {selected_file.name}: {str(e)}")
     
-    # Cleanup
-    if os.path.exists('temp_image.jpg'):
-        os.remove('temp_image.jpg')
-    if os.path.exists('reconstructed.jpg'):
-        os.remove('reconstructed.jpg') 
+    finally:
+        # Cleanup
+        if os.path.exists('temp_image.jpg'):
+            os.remove('temp_image.jpg')
+        if os.path.exists(reconstructed_filename):
+            os.remove(reconstructed_filename)
